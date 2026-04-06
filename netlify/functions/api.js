@@ -1,6 +1,7 @@
 // backend/netlify/functions/api.js
 import serverless from 'serverless-http'
-import * as appModule from '../../src/index.js'
+import { app } from '../../src/index.js'
 
-const app = appModule.default || appModule
-export const handler = serverless(app)
+// Double-check we have the actual app function and not a module object
+const finalApp = app?.default || app
+export const handler = serverless(finalApp)
