@@ -35,14 +35,14 @@ const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 })
 app.use('/api', limiter)
 
 // ── Routes ────────────────────────────────────────────────
-app.use('/api/auth',      authRoutes)
-app.use('/api/halls',     hallRoutes)
-app.use('/api/bookings',  bookingRoutes)
-app.use('/api/payments',  paymentRoutes)
-app.use('/api/catering',  cateringRoutes)
-app.use('/api/staff',     staffRoutes)
-app.use('/api/dashboard', dashboardRoutes)
-app.use('/api/users',     userRoutes)
+app.use('/api/auth',      authRoutes.default || authRoutes)
+app.use('/api/halls',     hallRoutes.default || hallRoutes)
+app.use('/api/bookings',  bookingRoutes.default || bookingRoutes)
+app.use('/api/payments',  paymentRoutes.default || paymentRoutes)
+app.use('/api/catering',  cateringRoutes.default || cateringRoutes)
+app.use('/api/staff',     staffRoutes.default || staffRoutes)
+app.use('/api/dashboard', dashboardRoutes.default || dashboardRoutes)
+app.use('/api/users',     userRoutes.default || userRoutes)
 
 app.get('/api/health', (_, res) => res.json({ status: 'ok', time: new Date() }))
 
