@@ -1,5 +1,6 @@
 // src/controllers/staff.controller.js
-import prisma from '../utils/prisma.js'
+import * as prismaModule from '../utils/prisma.js'
+const prisma = prismaModule.prisma || prismaModule.default || prismaModule
 
 export const assignShift = async (req, res) => {
   try {

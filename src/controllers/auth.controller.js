@@ -1,7 +1,8 @@
 // src/controllers/auth.controller.js
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import prisma from '../utils/prisma.js'
+import * as prismaModule from '../utils/prisma.js'
+const prisma = prismaModule.prisma || prismaModule.default || prismaModule
 
 const signToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' })
 

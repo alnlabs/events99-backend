@@ -1,5 +1,6 @@
 // src/controllers/dashboard.controller.js
-import prisma from '../utils/prisma.js'
+import * as prismaModule from '../utils/prisma.js'
+const prisma = prismaModule.prisma || prismaModule.default || prismaModule
 
 export const getAdminStats = async (req, res) => {
   try {

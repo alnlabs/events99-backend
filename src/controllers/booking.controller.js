@@ -1,5 +1,6 @@
 // src/controllers/booking.controller.js
-import prisma from '../utils/prisma.js'
+import * as prismaModule from '../utils/prisma.js'
+const prisma = prismaModule.prisma || prismaModule.default || prismaModule
 
 export const createBooking = async (req, res) => {
   try {

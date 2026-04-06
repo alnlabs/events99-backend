@@ -1,6 +1,7 @@
 // src/middleware/auth.middleware.js
 import jwt from 'jsonwebtoken'
-import prisma from '../utils/prisma.js'
+import * as prismaModule from '../utils/prisma.js'
+const prisma = prismaModule.prisma || prismaModule.default || prismaModule
 
 export const authenticate = async (req, res, next) => {
   try {
