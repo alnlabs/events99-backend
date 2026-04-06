@@ -1,0 +1,218 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  STAFF
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  OTHER
+}
+
+enum ShiftStatus {
+  ASSIGNED
+  CONFIRMED
+  CHECKED_IN
+  COMPLETED
+  ABSENT
+}
+
+// ─── Users ───────────────────────────────────────────────
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  phone         String?
+  role          Role      @default(CUSTOMER)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  bookings      Booking[]
+  payments      Payment[]
+  shifts        StaffShift[]
+
+  @@map("users")
+}
+
+// ─── Halls ───────────────────────────────────────────────
+model Hall {
+  id            String    @id @default(uuid())
+  name          String
+  description   String?
+  capacityMin   Int
+  capacityMax   Int
+  pricePerHour  Decimal   @db.Decimal(10, 2)
+  pricePerDay   Decimal?  @db.Decimal(10, 2)
+  amenities     String[]
+  images        String[]
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  bookings      Booking[]
+  pricingRules  PricingRule[]
+
+  @@map("halls")
+}
+
+// ─── Catering Packages ───────────────────────────────────
+model CateringPackage {
+  id            String    @id @default(uuid())
+  name          String
+  description   String?
+  pricePerHead  Decimal   @db.Decimal(10, 2)
+  minGuests     Int       @default(10)
+  menuItems     Json      // array of { name, category, isVeg }
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  bookingCaterings BookingCatering[]
+
+  @@map("catering_packages")
+}
+
+// ─── Bookings ─────────────────────────────────────────────
+model Booking {
+  id              String        @id @default(uuid())
+  bookingRef      String        @unique @default(cuid())
+  userId          String
+  hallId          String
+  eventDate       DateTime      @db.Date
+  startTime       String        // "HH:MM"
+  endTime         String        // "HH:MM"
+  guestCount      Int
+  eventType       String        // wedding, birthday, corporate, etc.
+  specialRequests String?
+  status          BookingStatus @default(PENDING)
+  totalAmount     Decimal       @db.Decimal(10, 2)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id])
+  hall            Hall          @relation(fields: [hallId], references: [id])
+  payments        Payment[]
+  catering        BookingCatering?
+  shifts          StaffShift[]
+
+  @@map("bookings")
+}
+
+// ─── Booking Catering ─────────────────────────────────────
+model BookingCatering {
+  id              String          @id @default(uuid())
+  bookingId       String          @unique
+  packageId       String
+  confirmedGuests Int
+  specialDietary  String?
+  totalCateringCost Decimal       @db.Decimal(10, 2)
+  finalisedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  booking         Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  package         CateringPackage @relation(fields: [packageId], references: [id])
+
+  @@map("booking_caterings")
+}
+
+// ─── Payments ─────────────────────────────────────────────
+model Payment {
+  id            String        @id @default(uuid())
+  bookingId     String
+  userId        String
+  amount        Decimal       @db.Decimal(10, 2)
+  method        PaymentMethod
+  status        PaymentStatus @default(UNPAID)
+  referenceNo   String?       // cheque no / bank ref
+  notes         String?
+  receivedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+
+  @@map("payments")
+}
+
+// ─── Staff Shifts ─────────────────────────────────────────
+model StaffShift {
+  id            String      @id @default(uuid())
+  bookingId     String
+  userId        String
+  role          String      // event_coordinator, catering_lead, av_tech, security, cleaning
+  shiftDate     DateTime    @db.Date
+  startTime     String
+  endTime       String
+  status        ShiftStatus @default(ASSIGNED)
+  checkedInAt   DateTime?
+  checkedOutAt  DateTime?
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  booking       Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id])
+
+  @@map("staff_shifts")
+}
+
+// ─── Pricing Rules ────────────────────────────────────────
+model PricingRule {
+  id            String    @id @default(uuid())
+  hallId        String
+  ruleType      String    // peak, weekend, holiday, discount
+  dateFrom      DateTime? @db.Date
+  dateTo        DateTime? @db.Date
+  daysOfWeek    Int[]     // 0=Sun,1=Mon,...,6=Sat
+  multiplier    Decimal?  @db.Decimal(4, 2)
+  fixedOverride Decimal?  @db.Decimal(10, 2)
+  label         String?
+  createdAt     DateTime  @default(now())
+
+  hall          Hall      @relation(fields: [hallId], references: [id])
+
+  @@map("pricing_rules")
+}
+
+// ─── Blocked Dates ────────────────────────────────────────
+model BlockedDate {
+  id        String    @id @default(uuid())
+  hallId    String?   // null = all halls
+  date      DateTime  @db.Date
+  reason    String?
+  createdAt DateTime  @default(now())
+
+  @@map("blocked_dates")
+}
